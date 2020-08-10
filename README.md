@@ -24,7 +24,7 @@ replacing `<RELEASE>` with the name of your release/deployment (e.g. "nextcloud"
 
 The script will output an IP address which must be the target of a DNS A-record for your domain.
 
-*Warning: The data volume is created automatically during installation. Deleting this deployment via `helm delete` will delete your data, so make sure to create a back-up first."
+*Warning: The data volume is created automatically during installation. Deleting this deployment via `helm delete` will delete your data, so make sure to create a back-up first.*
 
 The size of the data partition, as well as other various options, can be configured via `configs/nextcloud.values.yaml`.
 
