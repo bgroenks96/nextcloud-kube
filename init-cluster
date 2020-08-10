@@ -1,0 +1,24 @@
+#!/bin/bash
+# This script sets up the Kubernetes cluster to support Nextcloud deployments.
+# It should only be run once per cluster.
+# Requirements: helm and kubectl
+
+if [[ -z "$1" ]]
+  then
+    echo "Please pass your email address as the first argument."
+fi
+
+# Install Nginx ingress controller
+helm install nginx-ingress stable/nginx-ingress --namespace kube-system --set defaultBackend.enabled=false
+
+# Install custom resource definition for cert manager
+kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.16.0/cert-manager.crds.yaml
+
+# Add Jetstack chart repo
+helm repo add jetstack https://charts.jetstack.io && helm repo update
+
+# Install cert-manager
+helm install cert-manager jetstack/cert-manager --namespace kube-system
+
+# Configure cert issuer
+cat configs/prod.issuer.yaml | sed -e "s/<EMAIL>/$1/g" | kubectl apply -f -

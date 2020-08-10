@@ -1,0 +1,5 @@
+mysqlUser: nextcloud
+mysqlPassword: DBPASS
+mysqlDatabase: nextcloud-db
+service:
+  type: ClusterIP
