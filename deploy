@@ -17,23 +17,23 @@ DOMAIN="$2"
 DBPASS=$(openssl rand -hex 16)
 
 # Create namespace
-# kubectl create namespace $RELEASE
+kubectl create namespace $RELEASE
 
-# # Deploy MySQL database
-# cat configs/mysql.values.yaml \
-#     | sed -e "s/DBPASS/$DBPASS/g" \
-#     | helm install $RELEASE-db stable/mysql --namespace $RELEASE -f -
-# # Deploy NextCloud
-# cat configs/nextcloud.values.yaml \
-#     | sed -e "s/DBPASS/$DBPASS/g" \
-#     | sed -e "s/RELEASE/$RELEASE/g" \
-#     | sed -e "s/DOMAIN.COM/$DOMAIN/g" \
-#     | helm install $RELEASE stable/nextcloud --namespace $RELEASE -f -
-# # Configure NextCloud ingress controller
-# cat configs/ingress.yaml \
-#     | sed -e "s/RELEASE/$RELEASE/g" \
-#     | sed -e "s/DOMAIN.COM/$DOMAIN/g" \
-#     | kubectl apply -f -
+# Deploy MySQL database
+cat configs/mysql.values.yaml \
+    | sed -e "s/DBPASS/$DBPASS/g" \
+    | helm install $RELEASE-db stable/mysql --namespace $RELEASE -f -
+# Deploy NextCloud
+cat configs/nextcloud.values.yaml \
+    | sed -e "s/DBPASS/$DBPASS/g" \
+    | sed -e "s/RELEASE/$RELEASE/g" \
+    | sed -e "s/DOMAIN.COM/$DOMAIN/g" \
+    | helm install $RELEASE stable/nextcloud --namespace $RELEASE -f -
+# Configure NextCloud ingress controller
+cat configs/ingress.yaml \
+    | sed -e "s/RELEASE/$RELEASE/g" \
+    | sed -e "s/DOMAIN.COM/$DOMAIN/g" \
+    | kubectl apply -f -
 
 IP=$(kubectl get service nginx-ingress-controller --namespace kube-system -o jsonpath='{.status.loadBalancer.ingress[*].ip}')
 
