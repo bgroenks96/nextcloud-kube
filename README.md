@@ -28,6 +28,6 @@ The script will output an IP address which must be the target of a DNS A-record 
 
 The size of the data partition, as well as other various options, can be configured **before deployment** via `templates/nextcloud.values.yaml`.
 
-After deployment, generated configuration files for that release will be placed in the `releases` directory. You can change the configuration options and upgrade the existing deployment using `upgrade <RELEASE>` where `<RELEASE>` is the same identifier you used when creating the deployment.
+After deployment, generated configuration files for that release will be placed in the `releases` directory. You can change the configuration options and upgrade the existing deployment using `./update <RELEASE>` where `<RELEASE>` is the same identifier you used when creating the deployment.
 
 Please note that these scripts and configuration files are provided WITHOUT WARRANTY and by using it you agree to release the author of any potential damages resulting from accidental loss or corruption of your data.
