@@ -26,7 +26,7 @@ if [[ -z "$1" || -z "$2" ]]
 fi
 
 # if dry run is set, we will not apply any changes to the cluster
-[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && echo "WARNING: Dry run; no changes will be applied to the cluster"
+[[ $FLAGS_dry_run -eq FLAGS_TRUE ]] && echo "WARNING: Dry run; no changes will be applied to the cluster"
 
 RELEASE="$1"
 DOMAIN="$2"
@@ -47,7 +47,7 @@ mkdir -p releases/$RELEASE
 cat templates/mysql.values.yaml \
     | sed -e "s/DBPASS/$DBPASS/g" > releases/$RELEASE/mysql.values.yaml
 
-[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install $RELEASE-db stable/mysql --namespace $RELEASE -f $RELEASE/mysql.values.yaml
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install "$RELEASE-db" stable/mysql --namespace $RELEASE -f releases/$RELEASE/mysql.values.yaml
 
 # Deploy NextCloud
 cat templates/nextcloud.values.yaml \
@@ -55,7 +55,7 @@ cat templates/nextcloud.values.yaml \
     | sed -e "s/RELEASE/$RELEASE/g" \
     | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/nextcloud.values.yaml
 
-[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install $RELEASE stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install "$RELEASE" stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
 
 # Configure NextCloud ingress controller
 cat templates/ingress.yaml \

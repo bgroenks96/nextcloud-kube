@@ -1,0 +1,17 @@
+#!/bin/bash
+# Deploys an instance of nextcloud on the server.
+# Usage:
+# deploy <NAME>
+# where <NAME> should be replaced by the user-specified identifier for this deployment
+
+if [[ -z "$1" ]]
+  then
+    echo "ERROR: Release NAME must be supplied."
+    $0 --help
+    exit 1
+fi
+
+RELEASE="$1"
+
+helm upgrade $RELEASE-db stable/mysql --namespace $RELEASE -f releases/$RELEASE/mysql.values.yaml
+helm upgrade $RELEASE stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
