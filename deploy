@@ -5,46 +5,69 @@
 # where <NAME> should be replaced by the user-specified identifier for this deployment and
 # <DOMAIN> should be replaced by the domain name which will resolve to the load balancer IP
 
+export FLAGS_HELP="USAGE: ./deploy [OPTIONS] [NAME] [DOMAIN] \
+where NAME is the user-specified identifier for this release, \
+and DOMAIN is the user-configured host name for Nextcloud."
+
+# source shflags
+. ./lib/shflags
+
+DEFINE_boolean 'dry-run' 1 'generate release config without applying changes' 'd'
+
+# parse the command-line
+FLAGS "$@" || exit $?
+eval set -- "${FLAGS_ARGV}"
+
 if [[ -z "$1" || -z "$2" ]]
   then
-    echo "Usage: deploy <NAME> <DOMAIN>"
-    echo "where <NAME> should be replaced by the user-specified identifier for this deployment and \
-<DOMAIN> should be replaced by the domain name which will resolve to the load balancer IP"
+    echo "ERROR: Both NAME and DOMAIN must be supplied."
+    $0 --help
     exit 1
 fi
 
+# if dry run is set, we will not apply any changes to the cluster
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && echo "WARNING: Dry run; no changes will be applied to the cluster"
+
 RELEASE="$1"
 DOMAIN="$2"
-#DBPASS=$(openssl rand -hex 16)
+
+if [[ -z "$DBPASS" ]]
+  # generate new database passcode if none already set
+  then
+    DBPASS=$(openssl rand -hex 16)
+    echo "Generated new database password: $DBPASS"
+fi
 
 mkdir -p releases/$RELEASE
 
 # Create namespace
-#kubectl create namespace $RELEASE
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && kubectl create namespace $RELEASE
 
 # Deploy MySQL database
-cat configs/mysql.values.yaml \
+cat templates/mysql.values.yaml \
     | sed -e "s/DBPASS/$DBPASS/g" > releases/$RELEASE/mysql.values.yaml
 
-#helm install $RELEASE-db stable/mysql --namespace $RELEASE -f $RELEASE/mysql.values.yaml
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install $RELEASE-db stable/mysql --namespace $RELEASE -f $RELEASE/mysql.values.yaml
 
 # Deploy NextCloud
-cat configs/nextcloud.values.yaml \
+cat templates/nextcloud.values.yaml \
     | sed -e "s/DBPASS/$DBPASS/g" \
     | sed -e "s/RELEASE/$RELEASE/g" \
     | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/nextcloud.values.yaml
 
-#helm install $RELEASE stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install $RELEASE stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
 
 # Configure NextCloud ingress controller
-cat configs/ingress.yaml \
+cat templates/ingress.yaml \
     | sed -e "s/RELEASE/$RELEASE/g" \
     | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/ingress.yaml
 
-#kubectl apply -f releases/$RELEASE/ingress.yaml
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && kubectl apply -f releases/$RELEASE/ingress.yaml
 
-IP=$(kubectl get service nginx-ingress-controller --namespace kube-system -o jsonpath='{.status.loadBalancer.ingress[*].ip}')
-
-echo "Deployment complete. NextCloud service is exposed at address $IP:80"
-echo "Note that NextCloud is only accessible via the configured domain name, $DOMAIN"
-echo "You must add a DNS A-record via your domain provider which points to $IP"
+if [[ $FLAGS_dry_run -eq FLAGS_FALSE ]];
+  then
+    IP=$(kubectl get service nginx-ingress-controller --namespace kube-system -o jsonpath='{.status.loadBalancer.ingress[*].ip}')
+    echo "Deployment complete. NextCloud service is exposed at address $IP"
+    echo "Note that NextCloud is only accessible via the configured domain name, $DOMAIN"
+    echo "You must add a DNS A-record via your domain provider which points to $IP"
+fi
