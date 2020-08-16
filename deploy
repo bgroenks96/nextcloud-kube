@@ -10,30 +10,38 @@ if [[ -z "$1" || -z "$2" ]]
     echo "Usage: deploy <NAME> <DOMAIN>"
     echo "where <NAME> should be replaced by the user-specified identifier for this deployment and \
 <DOMAIN> should be replaced by the domain name which will resolve to the load balancer IP"
+    exit 1
 fi
 
 RELEASE="$1"
 DOMAIN="$2"
-DBPASS=$(openssl rand -hex 16)
+#DBPASS=$(openssl rand -hex 16)
+
+mkdir -p releases/$RELEASE
 
 # Create namespace
-kubectl create namespace $RELEASE
+#kubectl create namespace $RELEASE
 
 # Deploy MySQL database
 cat configs/mysql.values.yaml \
-    | sed -e "s/DBPASS/$DBPASS/g" \
-    | helm install $RELEASE-db stable/mysql --namespace $RELEASE -f -
+    | sed -e "s/DBPASS/$DBPASS/g" > releases/$RELEASE/mysql.values.yaml
+
+#helm install $RELEASE-db stable/mysql --namespace $RELEASE -f $RELEASE/mysql.values.yaml
+
 # Deploy NextCloud
 cat configs/nextcloud.values.yaml \
     | sed -e "s/DBPASS/$DBPASS/g" \
     | sed -e "s/RELEASE/$RELEASE/g" \
-    | sed -e "s/DOMAIN.COM/$DOMAIN/g" \
-    | helm install $RELEASE stable/nextcloud --namespace $RELEASE -f -
+    | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/nextcloud.values.yaml
+
+#helm install $RELEASE stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
+
 # Configure NextCloud ingress controller
 cat configs/ingress.yaml \
     | sed -e "s/RELEASE/$RELEASE/g" \
-    | sed -e "s/DOMAIN.COM/$DOMAIN/g" \
-    | kubectl apply -f -
+    | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/ingress.yaml
+
+#kubectl apply -f releases/$RELEASE/ingress.yaml
 
 IP=$(kubectl get service nginx-ingress-controller --namespace kube-system -o jsonpath='{.status.loadBalancer.ingress[*].ip}')
 
