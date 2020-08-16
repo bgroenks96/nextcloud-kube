@@ -55,7 +55,7 @@ cat templates/nextcloud.values.yaml \
     | sed -e "s/RELEASE/$RELEASE/g" \
     | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/nextcloud.values.yaml
 
-[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install "$RELEASE" stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
+[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install "$RELEASE" stable/nextcloud --version 1.11.0 --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
 
 # Configure NextCloud ingress controller
 cat templates/ingress.yaml \

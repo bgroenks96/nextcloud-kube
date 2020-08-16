@@ -1,7 +1,7 @@
 #!/bin/bash
 # Deploys an instance of nextcloud on the server.
 # Usage:
-# deploy <NAME>
+# update <NAME>
 # where <NAME> should be replaced by the user-specified identifier for this deployment
 
 if [[ -z "$1" ]]
