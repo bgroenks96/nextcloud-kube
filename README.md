@@ -24,9 +24,13 @@ replacing `<RELEASE>` with the name of your release/deployment (e.g. "nextcloud"
 
 The script will output an IP address which must be the target of a DNS A-record for your domain.
 
-*Warning: The data volume is created automatically during installation. Deleting this deployment via `helm delete` will delete your data, so make sure to create a back-up first.*
+The size of the data partition can be set as an argument to `deploy`:
 
-The size of the data partition, as well as other various options, can be configured **before deployment** via `templates/nextcloud.values.yaml`.
+`./deploy -s 100Gi <RELEASE> <DOMAIN>`
+
+Other options can be supplied; `dry-run` will test the configuration without applying any changes, and `staging` will use the Let's Encrypt staging certificate endpoint to avoid exceeding the quotas for your domain:
+
+`./deploy --dry-run --staging <RELEASE> <DOMAIN>`
 
 After deployment, generated configuration files for that release will be placed in the `releases` directory. You can change the configuration options and upgrade the existing deployment using `./update <RELEASE>` where `<RELEASE>` is the same identifier you used when creating the deployment.
 
