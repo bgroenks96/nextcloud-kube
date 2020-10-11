@@ -20,12 +20,12 @@ helm delete $RELEASE --namespace $RELEASE
 # delete namespace; due to some issue with finalizers, this will hang by default;
 # thus we use a workaround to directly PUT a copy of the namespace without finalizer hooks
 # to the finalize API
-echo "Cleaning up remaining resources ..."
-kubectl proxy &
-PID=$!
-sleep 2
-kubectl get ns $RELEASE -o json | jq '.spec.finalizers=[]' > ns-$RELEASE-without-finalizers.json
-curl -X PUT http://localhost:8001/api/v1/namespaces/$RELEASE/finalize -H "Content-Type: application/json" --data-binary @ns-$1-without-finalizers.json
-rm ns-$RELEASE-without-finalizers.json
-kill $PID
-kubectl delete namespace $RELEASE
+#echo "Cleaning up remaining resources ..."
+#kubectl proxy &
+#PID=$!
+#sleep 2
+#kubectl get ns $RELEASE -o json | jq '.spec.finalizers=[]' > ns-$RELEASE-without-finalizers.json
+#curl -X PUT http://localhost:8001/api/v1/namespaces/$RELEASE/finalize -H "Content-Type: application/json" --data-binary @ns-$1-without-finalizers.json
+#rm ns-$RELEASE-without-finalizers.json
+#kill $PID
+#kubectl delete namespace $RELEASE

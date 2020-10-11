@@ -3,7 +3,7 @@
 ##
 image:
   repository: nextcloud
-  tag: 18.0.6-apache
+  tag: stable-apache
   pullPolicy: IfNotPresent
   # pullSecrets:
   #   - myRegistrKeySecretName
@@ -18,39 +18,39 @@ replicaCount: 1
 ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ##
 ingress:
-  enabled: false
-  annotations: {}
-  #  nginx.ingress.kubernetes.io/proxy-body-size: 4G
-  #  kubernetes.io/tls-acme: "true"
-  #  certmanager.k8s.io/cluster-issuer: letsencrypt-prod
-  #  nginx.ingress.kubernetes.io/server-snippet: |-
-  #    server_tokens off;
-  #    proxy_hide_header X-Powered-By;
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 10G
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-CERTTYPE
+    nginx.ingress.kubernetes.io/server-snippet: |-
+      server_tokens off;
+      proxy_hide_header X-Powered-By;
 
-  #    rewrite ^/.well-known/webfinger /public.php?service=webfinger last;
-  #    rewrite ^/.well-known/host-meta /public.php?service=host-meta last;
-  #    rewrite ^/.well-known/host-meta.json /public.php?service=host-meta-json;
-  #    location = /.well-known/carddav {
-  #      return 301 $scheme://$host/remote.php/dav;
-  #    }
-  #    location = /.well-known/caldav {
-  #      return 301 $scheme://$host/remote.php/dav;
-  #    }
-  #    location = /robots.txt {
-  #      allow all;
-  #      log_not_found off;
-  #      access_log off;
-  #    }
-  #    location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)/ {
-  #      deny all;
-  #    }
-  #    location ~ ^/(?:autotest|occ|issue|indie|db_|console) {
-  #      deny all;
-  #    }
-  #  tls:
-  #    - secretName: nextcloud-tls
-  #      hosts:
-  #        - nextcloud.kube.home
+      rewrite ^/.well-known/webfinger /public.php?service=webfinger last;
+      rewrite ^/.well-known/host-meta /public.php?service=host-meta last;
+      rewrite ^/.well-known/host-meta.json /public.php?service=host-meta-json;
+      location = /.well-known/carddav {
+        return 301 $scheme://$host/remote.php/dav;
+      }
+      location = /.well-known/caldav {
+        return 301 $scheme://$host/remote.php/dav;
+      }
+      location = /robots.txt {
+        allow all;
+        log_not_found off;
+        access_log off;
+      }
+      location ~ ^/(?:build|tests|config|lib|3rdparty|templates|data)/ {
+        deny all;
+      }
+      location ~ ^/(?:autotest|occ|issue|indie|db_|console) {
+        deny all;
+      }
+  tls:
+    - secretName: nextcloud-CERTTYPE-tls
+      hosts:
+        - DOMAIN.COM
   labels: {}
 
 
@@ -238,21 +238,19 @@ redis:
 ## ref: https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/background_jobs_configuration.html#cron-jobs
 ##
 cronjob:
-  enabled: false
+  enabled: true
   # Nexcloud image is used as default but only curl is needed
-  image: {}
-    # repository: nextcloud
-    # tag: 16.0.3-apache
-    # pullPolicy: IfNotPresent
-    # pullSecrets:
-    #   - myRegistrKeySecretName
+  image:
+    repository: nextcloud
+    tag: 16.0.3-apache
+    pullPolicy: IfNotPresent
   # Every 15 minutes
   # Note: Setting this to any any other value than 15 minutes might
   #  cause issues with how nextcloud background jobs are executed
   schedule: "*/15 * * * *"
   annotations: {}
   # Set curl's insecure option if you use e.g. self-signed certificates
-  curlInsecure: false
+  curlInsecure: true
   failedJobsHistoryLimit: 5
   successfulJobsHistoryLimit: 2
   # If not set, nextcloud deployment one will be set
@@ -297,14 +295,14 @@ persistence:
   ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
   ##   GKE, AWS & OpenStack)
   ##
-  # storageClass: "-"
+  storageClass: "do-block-storage"
 
   ## A manually managed Persistent Volume and Claim
   ## Requires persistence.enabled: true
   ## If defined, PVC must be created manually before volume will be bound
-  #existingClaim: "nextcloud-pv"
+  existingClaim: "RELEASE-pvc"
   accessMode: ReadWriteOnce
-  size: 10Gi
+  size: SIZE
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

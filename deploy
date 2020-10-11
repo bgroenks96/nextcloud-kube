@@ -5,18 +5,22 @@
 # where <NAME> should be replaced by the user-specified identifier for this deployment and
 # <DOMAIN> should be replaced by the domain name which will resolve to the load balancer IP
 
-export FLAGS_HELP="USAGE: ./deploy [OPTIONS] [NAME] [DOMAIN] \
+export FLAGS_HELP="USAGE: $(basename $0) [OPTIONS] [NAME] [DOMAIN] \
 where NAME is the user-specified identifier for this release, \
 and DOMAIN is the user-configured host name for Nextcloud."
 
 # source shflags
 . ./lib/shflags
 
-DEFINE_boolean 'dry-run' 1 'generate release config without applying changes' 'd'
+DEFINE_boolean dry-run 1 "generate release config without applying changes" d
+DEFINE_boolean staging 1 "use staging TLS certificate (for debugging only)"
+DEFINE_string storage '50Gi' "size of persistent data storage volume" s
 
 # parse the command-line
 FLAGS "$@" || exit $?
 eval set -- "${FLAGS_ARGV}"
+
+EXTRA_ARGS=""
 
 if [[ -z "$1" || -z "$2" ]]
   then
@@ -25,11 +29,32 @@ if [[ -z "$1" || -z "$2" ]]
     exit 1
 fi
 
-# if dry run is set, we will not apply any changes to the cluster
-[[ $FLAGS_dry_run -eq FLAGS_TRUE ]] && echo "WARNING: Dry run; no changes will be applied to the cluster"
+if [[ $FLAGS_staging -eq FLAGS_TRUE ]]
+  then
+    CERTTYPE="staging"
+  else
+    CERTTYPE="prod"
+fi
+
+if [[ $FLAGS_dry_run -eq FLAGS_TRUE ]]
+  then
+    echo "WARNING: Dry run; no changes will be applied to the cluster"
+    EXTRA_ARGS="--dry-run"
+fi
 
 RELEASE="$1"
 DOMAIN="$2"
+
+# Define generic function to generate configuration files from templates
+generate_from_template () {
+  local filename="$1"
+  cat templates/$filename \
+      | sed -e "s/DBPASS/$DBPASS/g" \
+      | sed -e "s/RELEASE/$RELEASE/g" \
+      | sed -e "s/DOMAIN.COM/$DOMAIN/g"  \
+      | sed -e "s/SIZE/$FLAGS_storage/g" \
+      | sed -e "s/CERTTYPE/$CERTTYPE/g" > releases/$RELEASE/$filename
+}
 
 if [[ -z "$DBPASS" ]]
   # generate new database passcode if none already set
@@ -43,26 +68,24 @@ mkdir -p releases/$RELEASE
 # Create namespace
 [[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && kubectl create namespace $RELEASE
 
-# Deploy MySQL database
-cat templates/mysql.values.yaml \
-    | sed -e "s/DBPASS/$DBPASS/g" > releases/$RELEASE/mysql.values.yaml
+# Create new volume
+generate_from_template storage.yaml
+kubectl apply $EXTRA_ARGS --namespace $RELEASE -f releases/$RELEASE/storage.yaml
 
-[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install "$RELEASE-db" stable/mysql --namespace $RELEASE -f releases/$RELEASE/mysql.values.yaml
+# Deploy MySQL database
+generate_from_template mysql.values.yaml
+helm install "$RELEASE-db" stable/mysql --namespace $RELEASE $EXTRA_ARGS -f releases/$RELEASE/mysql.values.yaml
 
 # Deploy NextCloud
-cat templates/nextcloud.values.yaml \
-    | sed -e "s/DBPASS/$DBPASS/g" \
-    | sed -e "s/RELEASE/$RELEASE/g" \
-    | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/nextcloud.values.yaml
-
-[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && helm install "$RELEASE" stable/nextcloud --version 1.11.0 --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
+generate_from_template nextcloud.values.yaml
+helm install "$RELEASE" nextcloud/nextcloud --namespace $RELEASE $EXTRA_ARGS -f releases/$RELEASE/nextcloud.values.yaml
 
 # Configure NextCloud ingress controller
-cat templates/ingress.yaml \
-    | sed -e "s/RELEASE/$RELEASE/g" \
-    | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/ingress.yaml
-
-[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && kubectl apply -f releases/$RELEASE/ingress.yaml
+# NOTE: No longer necessary with built-in NextCloud ingress controller
+#cat templates/ingress.yaml \
+#    | sed -e "s/RELEASE/$RELEASE/g" \
+#    | sed -e "s/DOMAIN.COM/$DOMAIN/g" > releases/$RELEASE/ingress.yaml
+#[[ $FLAGS_dry_run -eq FLAGS_FALSE ]] && kubectl apply -f releases/$RELEASE/ingress.yaml
 
 if [[ $FLAGS_dry_run -eq FLAGS_FALSE ]];
   then

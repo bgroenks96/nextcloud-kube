@@ -6,6 +6,7 @@
 if [[ -z "$1" ]]
   then
     echo "Please pass your email address as the first argument."
+    exit 1
 fi
 
 # Install Nginx ingress controller
@@ -14,11 +15,14 @@ helm install nginx-ingress stable/nginx-ingress --namespace kube-system --set de
 # Install custom resource definition for cert manager
 kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.16.0/cert-manager.crds.yaml
 
-# Add Jetstack chart repo
-helm repo add jetstack https://charts.jetstack.io && helm repo update
+# Add chart repos
+helm repo add jetstack https://charts.jetstack.io
+helm repo add nextcloud https://nextcloud.github.io/helm/
+helm repo update
 
 # Install cert-manager
-helm install cert-manager jetstack/cert-manager --namespace kube-system
+helm install cert-manager jetstack/cert-manager --namespace kube-system --version v0.16.0
 
 # Configure cert issuer
-cat configs/prod.issuer.yaml | sed -e "s/<EMAIL>/$1/g" | kubectl apply -f -
+cat templates/staging.issuer.yaml | sed -e "s/<EMAIL>/$1/g" | kubectl apply -f -
+cat templates/prod.issuer.yaml | sed -e "s/<EMAIL>/$1/g" | kubectl apply -f -

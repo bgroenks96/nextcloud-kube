@@ -14,4 +14,4 @@ fi
 RELEASE="$1"
 
 helm upgrade $RELEASE-db stable/mysql --namespace $RELEASE -f releases/$RELEASE/mysql.values.yaml
-helm upgrade $RELEASE stable/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
+helm upgrade $RELEASE nextcloud/nextcloud --namespace $RELEASE -f releases/$RELEASE/nextcloud.values.yaml
