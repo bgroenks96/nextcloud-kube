@@ -34,4 +34,6 @@ Other options can be supplied; `dry-run` will test the configuration without app
 
 After deployment, generated configuration files for that release will be placed in the `releases` directory. You can change the configuration options and upgrade the existing deployment using `./update <RELEASE>` where `<RELEASE>` is the same identifier you used when creating the deployment.
 
-Please note that these scripts and configuration files are provided WITHOUT WARRANTY and by using it you agree to release the author of any potential damages resulting from accidental loss or corruption of your data.
+Note that the persistent storage configuration options in `storage.yaml` and `nextcloud.values.yaml` currently assume storage type of `do-block-storage` which is specific to DigitalOcean Kubernetes deployments. If you are using another cloud provider, **you will need to change these values**. Check your provider's documentation on persistent storage.
+
+These scripts and configuration files are provided WITHOUT WARRANTY and by using it you agree to release the author of any potential damages resulting from accidental loss or corruption of your data.
